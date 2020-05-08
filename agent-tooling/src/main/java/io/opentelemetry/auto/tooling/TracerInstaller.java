@@ -48,8 +48,6 @@ public class TracerInstaller {
     } else {
       log.info("Tracing is disabled.");
     }
-
-    PropagatorsInitializer.initializePropagators(Config.get().getPropagators());
   }
 
   @VisibleForTesting
@@ -64,16 +62,14 @@ public class TracerInstaller {
     }
     final DefaultExporterConfig config = new DefaultExporterConfig("exporter");
     final ExporterClassLoader exporterLoader =
-        new ExporterClassLoader(url, TracerInstaller.class.getClassLoader());
+        new ExporterClassLoader(new URL[] {url}, TracerInstaller.class.getClassLoader());
 
     final SpanExporterFactory spanExporterFactory =
         getExporterFactory(SpanExporterFactory.class, exporterLoader);
     if (spanExporterFactory != null) {
       final SpanExporter spanExporter = spanExporterFactory.fromConfig(config);
       OpenTelemetrySdk.getTracerProvider()
-          .addSpanProcessor(
-              BatchSpansProcessor.create(
-                  spanExporter, BatchSpansProcessor.Config.loadFromDefaultSources()));
+          .addSpanProcessor(BatchSpansProcessor.create(spanExporter));
       log.info("Installed span exporter: " + spanExporter.getClass().getName());
     } else {
       log.warn("No matching providers in jar " + exporterJar);
